@@ -1,0 +1,13 @@
+[package]
+name = "zkRust-dkim"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+zk_rust_io = { git = "https://github.com/yetanotherco/zkRust.git" }
+tokio = {version = "1.40.0", features = ["full"]}
+trust-dns-resolver = "0.23.2"
+regex = "1.11.0"
+cfdkim = { git = "https://github.com/allemanfredi/dkim" }
+mailparse = "0.14"
+serde_json = "1.0.128"
