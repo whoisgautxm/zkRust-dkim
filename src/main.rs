@@ -1,17 +1,40 @@
-use cfdkim::{dns, DkimPublicKey,verify_email_with_public_key, header::HEADER, public_key::retrieve_public_key, validate_header};
-use mailparse::{MailHeaderMap,parse_mail};
-use regex::Regex;
+use cfdkim::{
+    dns, header::HEADER, public_key::retrieve_public_key, validate_header,
+    verify_email_with_public_key, DkimPublicKey,
+};
+use mailparse::{parse_mail, MailHeaderMap};
 use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
 use tokio;
 use trust_dns_resolver::TokioAsyncResolver;
 
+
+ pub fn main() {
+
+    let from_domain = zk_rust_io::read::<String>();
+    let raw_email: Vec<u8> = zk_rust_io::read();
+    let public_key_type = zk_rust_io::read::<String>();
+    let public_key_vec: Vec<u8> = zk_rust_io::read();
+
+    println!("public_key_type: {}", public_key_type);
+    println!("public_key_vec: {:?}", public_key_vec);
+
+    let email = parse_mail(&raw_email).unwrap();
+    let public_key = DkimPublicKey::from_vec_with_type(&public_key_vec, &public_key_type);
+    let result = verify_email_with_public_key(&from_domain, &email, &public_key).unwrap();
+    if let Some(_) = &result.error() {
+        zk_rust_io::commit(&false);
+    } else {
+        zk_rust_io::commit(&true);
+    }
+}
+
 #[tokio::main]
 pub async fn input() -> Result<(), Box<dyn std::error::Error>> {
     let from_domain = "phonepe.com";
 
-    let mut file = File::open("/home/whoisgautxm/Desktop/sp1-dkim/script/email.eml")?;
+    let mut file = File::open("/home/whoisgautxm/Desktop/zkRust-dkim/src/email.eml")?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
     let raw_email = contents.replace('\n', "\r\n");
@@ -36,14 +59,13 @@ pub async fn input() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .unwrap();
 
-        // let mut stdin = SP1Stdin::new();
-        // stdin.write::<String>(&from_domain.to_string());
-        // stdin.write_vec(raw_email.as_bytes().to_vec());
-        // stdin.write::<String>(&public_key.get_type());
-        // stdin.write_vec(public_key.to_vec());
-
         let raw_email_vec = raw_email.as_bytes().to_vec();
         let pub_key_vec = public_key.to_vec();
+
+        println!("from_domain: {}", from_domain);
+        println!("raw_email_vec: {:?}", raw_email_vec);
+        println!("public_key_type: {}", public_key.get_type());
+        println!("pub_key_vec: {:?}", pub_key_vec);
 
         zk_rust_io::write(&from_domain.to_string());
         zk_rust_io::write(&raw_email_vec);
@@ -56,24 +78,8 @@ pub async fn input() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn main() {
-    let from_domain = zk_rust_io::read::<String>();
-    let raw_email : Vec<u8> = zk_rust_io::read();
-    let public_key_type = zk_rust_io::read::<String>();
-    let public_key_vec : Vec<u8> = zk_rust_io::read();
-
-    let email = parse_mail(&raw_email).unwrap();
-    let public_key = DkimPublicKey::from_vec_with_type(&public_key_vec, &public_key_type);
-    let result = verify_email_with_public_key(&from_domain, &email, &public_key).unwrap();
-    if let Some(_) = &result.error() {
-        zk_rust_io::commit(&false);
-    } else {
-        zk_rust_io::commit(&true);
-    }
-}
-
-fn output(){
-    let result : bool  =zk_rust_io::out();
+pub fn output() {
+    let result: bool = zk_rust_io::out();
 
     println!("result{}", result)
 }
